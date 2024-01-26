@@ -1,6 +1,7 @@
 from django.shortcuts import render
 from django.http import HttpResponse
 from datetime import datetime
+from product.models import Product
 
 
 def main_page_view(request):
@@ -23,4 +24,18 @@ def current_date(request):
 def goodby_view(request):
     if request.method == 'GET':
         return HttpResponse("Goodby user!")
+
+
+def product_view(request):
+    if request.method == 'GET':
+        products = Product.objects.all()  # QuerySet
+
+        context = {'products': products}
+
+        return render(
+            request,
+            'products/products.html',
+            context=context
+        )
+
 

@@ -13,3 +13,4 @@ pip-cache/
 .env
 *.bak
 static
+product_photos
