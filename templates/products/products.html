@@ -7,7 +7,7 @@
 
 {% for product in products %}
   <div class="card" style="width: 20rem;">
-    <img src="{{ product.photo }}" class="card-img-top" alt="...">
+    <img src="/media/{{ product.photo }}" class="card-img-top" alt="...">
     <div class="card-body">
       <h5 class="card-title">{{ product.title }} {{ product.price }}</h5>
       <p class="card-text">{{ product.created_at }}</p>
@@ -17,3 +17,4 @@
 {% endfor %}
 
 {% endblock %}
+
