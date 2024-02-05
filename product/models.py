@@ -8,7 +8,6 @@ class Category(models.Model):
         verbose_name = "Category"
         verbose_name_plural = "Categories"
 
-
     def __str__(self):
         return f'{self.id} - {self.title}'
 
@@ -29,7 +28,7 @@ class Product(models.Model):
 
 
 class Review(models.Model):
-    post = models.ForeignKey(
+    product = models.ForeignKey(
         "product.Product",
         on_delete=models.CASCADE,
         related_name="reviews"
