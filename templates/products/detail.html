@@ -1,0 +1,33 @@
+{% extends 'index.html' %}
+
+
+{% block content %}
+<h1>
+    {{ product.title }}
+</h1>
+<img src="/media/{{ product.photo }}">
+<p>
+    {{ product.content }}
+</p>
+<p>
+    {{ product.created_at }}
+</p>
+<h1>Reviews:</h1>
+{% for review in product.reviews.all %}
+    <p>
+        {{ review.text }}
+    </p>
+    <p>
+        {{ review.created_at }}
+    </p>
+    
+{% endfor %}
+    <form action="" method="post" enctype="multipart/form-data">
+    {% csrf_token %}
+    {{ form.as_p }}
+    <input type="submit" value="Create">
+</form>
+
+{% endblock %}
+
+<h1>Categories:</h1>
