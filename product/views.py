@@ -1,168 +1,155 @@
+from typing import Any
+from django.db.models.query import QuerySet
+from django.urls import reverse
+from django.views import View
+from django.views.generic import ListView, DetailView, CreateView, UpdateView, TemplateView
+from django.contrib.auth.mixins import LoginRequiredMixin
 from datetime import datetime
-
+from django.contrib.auth.decorators import login_required
+from django.db.models import Q
 from django.http import HttpResponse
 from django.shortcuts import render, get_object_or_404, redirect
 
 from product.forms import ProductCreateForm, ReviewCreateForm, CategoryCreateForm
 from product.models import Product, Category, Review
+from shop import settings
 
 
-def main_page_view(request):
-    if request.method == 'GET':
-        return render(request, 'index.html')
+class MainPageView(TemplateView):
+    template_name = 'index.html'
 
 
-def hello_view(request):
-    if request.method == 'GET':
+class HelloView(LoginRequiredMixin, View):
+    def get(self, request):
         return HttpResponse("Hello! Its my project")
 
 
-def current_date(request):
-    now = datetime.now()
-    current_data = now.strftime("%Y-%m-%d")
-    if request.method == 'GET':
+class CurrentDateView(View):
+    def get(self, request):
+        now = datetime.now()
+        current_data = now.strftime("%Y-%m-%d")
         return HttpResponse(f"today is the {current_data}")
 
 
-def goodby_view(request):
-    if request.method == 'GET':
+class GoodByView(View):
+    def get(self, request):
         return HttpResponse("Goodby user!")
 
 
-def product_view(request):
-    if request.method == 'GET':
-        selected_category = request.GET.get('category')
+class ProductListView(LoginRequiredMixin, ListView):
+    model = Product
+    template_name = 'products/products.html'
+    context_object_name = 'products'
+    paginate_by = settings.PAGE_SIZE
+
+    def get_queryset(self):
+        queryset = super().get_queryset()
+        selected_category = self.request.GET.get('category')
+        search = self.request.GET.get('search')
+        order = self.request.GET.get('order')
+
         if selected_category:
             category = get_object_or_404(Category, title=selected_category)
-            products = Product.objects.filter(category=category)
+            queryset = queryset.filter(category=category)
+        elif search:
+            queryset = queryset.filter(Q(title__icontains=search))
+
+        if order == 'title':
+            queryset = queryset.order_by('title')
+        elif order == '-title':
+            queryset = queryset.order_by('-title')
+        elif order == 'created_at':
+            queryset = queryset.order_by('created_at')
+        elif order == '-created_at':
+            queryset = queryset.order_by('-created_at')
         else:
-            products = Product.objects.all()
+            queryset = queryset.exclude(user=self.request.user)
 
-        context = {'products': products}
+        return queryset
 
-        return render(
-            request,
-            'products/products.html',
-            context=context
-        )
-
-
-def categories_view(request):
-    if request.method == 'GET':
-        CategoryCreateForm()
-        categories = Category.objects.all()
-        return render(
-            request,
-            'categories/list.html',
-            {"categories": categories}
-        )
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['selected_category'] = self.request.GET.get('category')
+        context['categories'] = Category.objects.all()
+        return context
 
 
-def category_products_view(request, category_id):
-    category = get_object_or_404(Category, id=category_id)
+class CategoriesView(TemplateView):
+    template_name = 'categories/list.html'
 
-    products = category.products.all()
-
-    context = {
-        'category': category,
-        'products': products,
-    }
-    return render(request,
-                  'categories/category_products.html',
-                  context)
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['form'] = CategoryCreateForm()
+        context['categories'] = Category.objects.all()
+        return context
 
 
-def product_detail_view(request, product_id):
-    if request.method == 'GET':
-        form = ReviewCreateForm()
-        try:
-            product = Product.objects.get(id=product_id)
-        except Product.DoesNotExist:
-            return render(
-                request,
-                'errors/404.html',
-            )
-        return render(
-            request,
-            'products/detail.html',
-            context={'product': product, 'form': form}
-        )
-    elif request.method == 'POST':
-        form = ReviewCreateForm(request.POST)
+class CategoryProductsView(TemplateView):
+    template_name = 'categories/category_products.html'
 
-        if form.is_valid():
-            Review.objects.create(product_id=product_id, **form.cleaned_data)
-            return redirect(f'/products/{product_id}/')
+    def get_context_data(self, category_id, **kwargs):
+        category = get_object_or_404(Category, id=category_id)
+        products = category.products.all()
 
         context = {
-            'form': form
+            'category': category,
+            'products': products,
         }
+        return context
 
-        return render(
-            request,
-            'products/detail.html',
-            context=context
-        )
-
-
-def product_create_view(request, product_id=None):
-    if request.method == 'GET':
-        context = {
-            'form': ProductCreateForm()
-        }
-
-        return render(
-            request,
-            'products/create.html',
-            context=context
-        )
-
-    elif request.method == 'POST':
-        form = ProductCreateForm(request.POST, request.FILES)
-
-        if form.is_valid():
-            Product.objects.create(**form.cleaned_data)
-            return redirect(f'/products/')
-
-        context = {
-            'form': form
-        }
-
-        return render(
-            request,
-            'products/create.html',
-            context=context
-        )
+    def get(self, request, category_id):
+        context = self.get_context_data(category_id)
+        return self.render_to_response(context)
 
 
-def category_create_view(request):
-    if request.method == 'GET':
-        context = {
-            'form': CategoryCreateForm()
-        }
+class ProductDitailView(DetailView):
+    model = Product
+    context_object_name = 'product'
+    template_name = 'products/detail.html'
+    pk_url_kwarg = 'product_id'
 
-        return render(
-            request,
-            'categories/create.html',
-            context=context
-        )
-
-    elif request.method == 'POST':
-        form = CategoryCreateForm(request.POST, request.FILES)
-
-        if form.is_valid():
-            Product.objects.create(**form.cleaned_data)
-            form.save()
-            return redirect('/products/')
-
-        context = {
-            'form': form
-        }
-
-        return render(
-            request,
-            'categories/create.html',
-            context=context
-        )
+    def get_context_data(self, **kwargs: Any) -> dict:
+        context = super().get_context_data(**kwargs)
+        context['review_form'] = ReviewCreateForm
+        context['products'] = Product.objects.all()
+        context['has_change_permission'] = (context['product'].user == self.request.user)
+        return context
 
 
+class ProductCreateView(CreateView, LoginRequiredMixin):
+    model = Product
+    form_class = ProductCreateForm
+    template_name = 'products/create.html'
+    success_url = '/products/'
+
+    def get_absolute_url(self):
+        if self.request.user.is_authenticated:
+            return reverse('products_list')
+        return reverse('login')
+
+
+class ProductUpdateView(UpdateView):
+    model = Product
+    form_class = ProductCreateForm
+    template_name = 'products/product_update.html'
+    pk_url_kwarg = 'product_id'
+    success_url = '/products/'
+
+    def get(self, request, *args, **kwargs):
+        product = self.get_object()
+        if product.user != request.user:
+            return HttpResponse('Permission denied', status=403)
+        return super().get(request, *args, **kwargs)
+
+
+class CategoryCreateView(CreateView):
+    model = Category
+    form_class = CategoryCreateForm
+    template_name = 'categories/create.html'
+
+    def get_success_url(self):
+        return '/products/'
+
+    def form_invalid(self, form):
+        context = {'form': form}
+        return render(self.request, self.template_name, context)
