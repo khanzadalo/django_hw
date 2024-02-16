@@ -1,7 +1,5 @@
 import random
-
 from django.contrib.auth.decorators import login_required
-
 from django.shortcuts import render, redirect
 from django.contrib.auth.models import User
 from django.contrib.auth import authenticate, login, logout
@@ -12,7 +10,7 @@ from .models import UserProfile, SMSCodes
 
 def register_view(request):
     if request.method == "GET":
-        return render(request, 'users/register.html', {'form': RegisterForm()})
+        return render(request, 'user/register.html', {'form': RegisterForm()})
     elif request.method == "POST":
         form = RegisterForm(request.POST, request.FILES)
         if form.is_valid():
@@ -21,7 +19,6 @@ def register_view(request):
             password = form.cleaned_data['password']
             first_name = form.cleaned_data['first_name']
             last_name = form.cleaned_data['last_name']
-
             avatar = form.cleaned_data['avatar']
             bio = form.cleaned_data['bio']
 
@@ -45,12 +42,12 @@ def register_view(request):
             )
             return redirect('verify', code=code)
         else:
-            return render(request, 'users/register.html', {"form": form})
+            return render(request, 'user/register.html', {"form": form})
 
 
 def verify_view(request, code):
     if request.method == 'GET':
-        return render(request, 'users/verify.html', {'form': VerifyForm(), 'code': code})  # Передаем код на страницу
+        return render(request, 'user/verify.html', {'form': VerifyForm(), 'code': code})  # Передаем код на страницу
     elif request.method == "POST":
         form = VerifyForm(request.POST)
         if form.is_valid():
@@ -66,7 +63,7 @@ def verify_view(request, code):
                     form.add_error(None, "Invalid code")
             else:
                 form.add_error('code', "Invalid code")
-        return render(request, 'users/verify.html', {'form': form, 'code': code})
+        return render(request, 'user/verify.html', {'form': form, 'code': code})
 
 
 def login_view(request):
@@ -74,7 +71,7 @@ def login_view(request):
         context = {
             'form': LoginForm()
         }
-        return render(request=request, template_name='users/login.html', context=context)
+        return render(request=request, template_name='user/login.html', context=context)
     elif request.method == 'POST':
         form = LoginForm(request.POST)
         if form.is_valid():
@@ -84,12 +81,12 @@ def login_view(request):
                 return redirect('/products/')
             else:
                 form.add_error('username', 'Username or password is incorrect!')
-        return render(request=request, template_name='users/login.html', context={"form": form})
+        return render(request=request, template_name='user/login.html', context={"form": form})
 
 
 def profile_view(request):
     if request.method == 'GET':
-        return render(request, 'users/profile.html', {"user": request.user})
+        return render(request, 'user/profile.html', {"user": request.user})
 
 
 @login_required
@@ -97,7 +94,7 @@ def profile_update_view(request):
     if request.method == 'GET':
         profile = UserProfile.objects.get(user=request.user)
         form = EditProfileForm(instance=profile)
-        return render(request, 'users/profile_update.html', {'form': form})
+        return render(request, 'user/profile_update.html', {'form': form})
     elif request.method == 'POST':
         profile = UserProfile.objects.get(user=request.user)
         form = EditProfileForm(request.POST, request.FILES, instance=profile)
@@ -105,7 +102,7 @@ def profile_update_view(request):
             form.save()
             return redirect('/profile/')
         else:
-            return render(request, 'users/profile_update.html', {'form': form})
+            return render(request, 'user/profile_update.html', {'form': form})
 
 
 def logout_view(request):

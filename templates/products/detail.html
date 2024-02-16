@@ -1,4 +1,4 @@
-{% extends 'index.html' %}
+{% include 'index.html' %}
 
 
 {% block content %}
@@ -18,7 +18,7 @@
         {{ review.text }}
     </p>
     <p>
-        {{ review.created_at }}
+        Date:{{ review.created_at }}
     </p>
     
 {% endfor %}

@@ -6,15 +6,18 @@ from product.models import Product, Category, Review
 class ProductCreateForm(forms.ModelForm):
     class Meta:
         model = Product
-        fields = ('title', 'photo', 'content')
+        fields = ('title', 'photo', 'content', 'price', 'category')
         labels = {'title': 'Title',
                   'photo': 'Photo',
                   'content': "Content",
+                  'price': 'Price',
+                  'category': 'Category'
                   }
+
         def clean_title(self):
             title = self.cleaned_data['title']
-            if len(title) > 10:
-                raise forms.ValidationError("The length exceeds 10 chars")
+            if len(title) < 10:
+                raise forms.ValidationError("Title must be at least 10 characters long.")
             return title
 
         def clean(self):

@@ -2,7 +2,7 @@ from typing import Any
 from django.db.models.query import QuerySet
 from django.urls import reverse
 from django.views import View
-from django.views.generic import ListView, DetailView, CreateView, UpdateView, TemplateView
+from django.views.generic import ListView, DetailView, CreateView, UpdateView, TemplateView, FormView
 from django.contrib.auth.mixins import LoginRequiredMixin
 from datetime import datetime
 from django.contrib.auth.decorators import login_required
@@ -15,28 +15,12 @@ from product.models import Product, Category, Review
 from shop import settings
 
 
-class MainPageView(TemplateView):
-    template_name = 'index.html'
+def main_page_view(request):
+    if request.method == 'GET':
+        return render(request, 'index.html')
 
 
-class HelloView(LoginRequiredMixin, View):
-    def get(self, request):
-        return HttpResponse("Hello! Its my project")
-
-
-class CurrentDateView(View):
-    def get(self, request):
-        now = datetime.now()
-        current_data = now.strftime("%Y-%m-%d")
-        return HttpResponse(f"today is the {current_data}")
-
-
-class GoodByView(View):
-    def get(self, request):
-        return HttpResponse("Goodby user!")
-
-
-class ProductListView(LoginRequiredMixin, ListView):
+class ProductsListView(LoginRequiredMixin, ListView):
     model = Product
     template_name = 'products/products.html'
     context_object_name = 'products'
@@ -74,49 +58,21 @@ class ProductListView(LoginRequiredMixin, ListView):
         return context
 
 
-class CategoriesView(TemplateView):
-    template_name = 'categories/list.html'
-
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        context['form'] = CategoryCreateForm()
-        context['categories'] = Category.objects.all()
-        return context
-
-
-class CategoryProductsView(TemplateView):
-    template_name = 'categories/category_products.html'
-
-    def get_context_data(self, category_id, **kwargs):
-        category = get_object_or_404(Category, id=category_id)
-        products = category.products.all()
-
-        context = {
-            'category': category,
-            'products': products,
-        }
-        return context
-
-    def get(self, request, category_id):
-        context = self.get_context_data(category_id)
-        return self.render_to_response(context)
-
-
 class ProductDitailView(DetailView):
     model = Product
     context_object_name = 'product'
-    template_name = 'products/detail.html'
     pk_url_kwarg = 'product_id'
+    template_name = 'products/detail.html'
 
-    def get_context_data(self, **kwargs: Any) -> dict:
+    def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context['review_form'] = ReviewCreateForm
         context['products'] = Product.objects.all()
+        context['review_form'] = ReviewCreateForm
         context['has_change_permission'] = (context['product'].user == self.request.user)
         return context
 
 
-class ProductCreateView(CreateView, LoginRequiredMixin):
+class ProductCreateView(CreateView):
     model = Product
     form_class = ProductCreateForm
     template_name = 'products/create.html'
@@ -131,8 +87,8 @@ class ProductCreateView(CreateView, LoginRequiredMixin):
 class ProductUpdateView(UpdateView):
     model = Product
     form_class = ProductCreateForm
-    template_name = 'products/product_update.html'
     pk_url_kwarg = 'product_id'
+    template_name = 'products/update.html'
     success_url = '/products/'
 
     def get(self, request, *args, **kwargs):
@@ -140,6 +96,24 @@ class ProductUpdateView(UpdateView):
         if product.user != request.user:
             return HttpResponse('Permission denied', status=403)
         return super().get(request, *args, **kwargs)
+
+
+class ProductDeleteView(DetailView):
+    model = Product
+    template_name = 'products/delete.html'
+    pk_url_kwarg = 'product_id'
+    success_url = '/products.html'
+
+
+class CategoriesListView(ListView):
+    model = Category
+    template_name = 'categories/list.html'
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['form'] = CategoryCreateForm()
+        context['categories'] = Category.objects.all()
+        return context
 
 
 class CategoryCreateView(CreateView):
@@ -153,3 +127,22 @@ class CategoryCreateView(CreateView):
     def form_invalid(self, form):
         context = {'form': form}
         return render(self.request, self.template_name, context)
+
+
+class CategoryProductsView(TemplateView):
+    template_name = 'categories/category_products.html'
+    pk_url_kwarg = 'category_id'
+
+    def get_context_data(self, category_id, **kwargs):
+        category = get_object_or_404(Category, id=category_id)
+        products = category.products.all()
+
+        context = {
+            'category': category,
+            'products': products,
+        }
+        return context
+
+    def get(self, request, category_id):
+        context = self.get_context_data(category_id)
+        return self.render_to_response(context)

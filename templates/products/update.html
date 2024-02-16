@@ -1,18 +1,16 @@
-{% include 'index.html' %}
-
+{% include 'layouts/index.html' %}
 
 {% block content %}
-
 <link rel="stylesheet" href="{% static 'css/create_form.css' %}">
-<form action="" method="post" enctype="multipart/form-data">
-<div class="form-left-decoration"></div>
+<form action="" method="POST" enctype="multipart/form-data">
+    <div class="form-left-decoration"></div>
     <div class="form-right-decoration"></div>
     <div class="circle"></div>
     <div class="form-inner">
-    <h3>Create Product</h3>
+    <h3>Edit Product</h3>
         {% csrf_token %}
         {{ form.as_p }}
-    <input type="submit" value="Create">
+    <button type="submit">Update</button>
     </div>
 </form>
 
